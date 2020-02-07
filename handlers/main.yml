@@ -1,0 +1,33 @@
+---
+
+- name: restart influxdb_scraper service
+  service: name=influxdb_scraper state=restarted enabled=yes
+  when:
+    - influxdb_scraper_post_config_restart_on_change | lower == 'true'
+    - influxdb_scraper_cluster_aware | lower == 'false'
+    - influxdb_scraper_use_docker | lower == 'false'
+
+- name: restart influxdb_scraper resource
+  shell: >
+    "{{ influxdb_scraper_cluster_command }} resource unmanage {{ influxdb_scraper_cluster_resource_name }} && \
+    systemctl restart influxdb_scraper.service && \
+    {{ influxdb_scraper_cluster_command }} resource manage {{ influxdb_scraper_cluster_resource_name }} && \
+    {{ influxdb_scraper_cluster_command }} resource enable {{ influxdb_scraper_cluster_resource_name }}"
+  when:
+    - influxdb_scraper_post_config_restart_on_change | lower == 'true'
+    - influxdb_scraper_cluster_aware | lower == 'true'
+
+- name: reload systemd
+  systemd: daemon-reload=yes
+
+- name: reload firewalld
+  command: firewall-cmd --reload
+
+- name: reload consul
+  command: "{{ consul_bin }} reload"
+
+- name: restart telegraf
+  service: name=telegraf state=restarted
+
+- name: delete repo key file
+  file: path="{{ repo_key_result.dest }}" state=absent

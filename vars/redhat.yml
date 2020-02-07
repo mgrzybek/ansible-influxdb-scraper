@@ -1,0 +1,10 @@
+---
+
+influxdb_scraper_repo_rpm_url: 
+influxdb_scraper_repo_key_url: 
+
+influxdb_scraper_distro_packages: []
+
+influxdb_scraper_sysconfig: /etc/sysconfig
+
+influxdb_scraper_cluster_command: pcs

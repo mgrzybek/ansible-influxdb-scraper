@@ -1,0 +1,43 @@
+---
+
+- name: Post-install | Get org-ID (1)
+  when: item.org in orgs | json_query('[*].id')
+  set_fact: org_id="{{ item.org | join }}"
+
+- name: Post-install | Get org-ID (2)
+  when: item.org not in orgs | json_query('[*].id')
+  set_fact: org_id="{{ orgs | json_query(query) | join }}"
+  vars:
+      query: "[?name=='{{ item.org }}'].id"
+
+- name: Post-install | Check if org exists
+  fail: msg="org {{ item.org }} does not exist"
+  when: org_id is undefined
+
+- name: Post-install | Retreive bucket ID from buckets fact
+  when: item.bucket in buckets | json_query('[*].name')
+  set_fact: bucket_id="{{ buckets | json_query(query) | join }}"
+  vars:
+      query: "[?name=='{{ item.bucket }}'].id"
+
+- name: Post-install | Create the scraper
+  when: item.name not in scrapers | json_query('[*].name')
+  block:
+    - name: Post-install | Create the scraper
+      register: scraper_info
+      uri:
+        url: "{{ scrapers_endpoint }}"
+        method: POST
+        body_format: json
+        status_code: 201
+        body: "{{ scraper_body }}"
+        headers:
+            Authorization: "Token {{ influxdb_api.token }}"
+      vars:
+        scraper_body: '{
+            "name": "{{ item.name }}",
+            "type": "{{ item.type }}",
+            "url": "{{ item.url }}",
+            "orgID": "{{ org_id }}",
+            "bucketID": "{{ bucket_id }}"
+        }'
