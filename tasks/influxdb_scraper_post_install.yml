@@ -1,5 +1,4 @@
 ---
-
 - name: Post-install | Get org-ID (1)
   when: item.org in orgs | json_query('[*].id')
   set_fact: org_id="{{ item.org | join }}"
@@ -24,7 +23,6 @@
   when: item.name not in scrapers | json_query('[*].name')
   block:
     - name: Post-install | Create the scraper
-      register: scraper_info
       uri:
         url: "{{ scrapers_endpoint }}"
         method: POST
@@ -41,3 +39,7 @@
             "orgID": "{{ org_id }}",
             "bucketID": "{{ bucket_id }}"
         }'
+      environment:
+        no_proxy: "{{ scrapers_endpoint | urlsplit('hostname') }}"
+      register: scraper_info
+...
